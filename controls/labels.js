@@ -90,6 +90,7 @@ const createLabel = async (req, res) => {
         middleRow: body.middleRow,
         lastRow: body.lastRow,
         user: body.user,
+        reference: body.reference.trim(),
       });
       const savedData = await set.save();
       savedArray.push(savedData);
@@ -127,9 +128,15 @@ const updateLabel = async (req, res) => {
 };
 
 const deleteLabel = async (req, res) => {
+  const reference = req.query.reference;
   try {
-    await LabelsSchema.deleteOne({ _id: req.params.id });
-    res.status(200).json({ message: "Label Deleted Successfully" });
+    if (reference) {
+      await LabelsSchema.deleteMany({ reference: reference });
+      res.status(200).json({ message: "Label Deleted Successfully" });
+    } else {
+      await LabelsSchema.deleteOne({ _id: req.params.id });
+      res.status(200).json({ message: "Label Deleted Successfully" });
+    }
   } catch (error) {
     res.status(404).json({ message: "Label not found" });
   }
@@ -147,12 +154,15 @@ const getLabel = async (req, res) => {
 
 const getLabels = async (req, res) => {
   try {
-    let query = {};
+    let query = {
+      reference: req.query.reference,
+    };
 
     const { searchWord, page = 1, limit = 10 } = req.query;
 
     if (searchWord) {
       query = {
+        reference: req.query.reference,
         $or: [
           { artNo: { $regex: searchWord.trim(), $options: "i" } },
           { barcode: { $regex: searchWord.trim(), $options: "i" } },
@@ -174,10 +184,37 @@ const getLabels = async (req, res) => {
   }
 };
 
+const getLabelsRefernces = async (req, res) => {
+  try {
+    let query = {};
+
+    const { searchWord } = req.query;
+
+    if (searchWord) {
+      query = {
+        $or: [{ reference: { $regex: searchWord.trim(), $options: "i" } }],
+      };
+    }
+    const result = await LabelsSchema.find(query);
+
+    const finalResult = [];
+    result.forEach((el) => {
+      if (!finalResult.find((element) => element == el.reference)) {
+        finalResult.push(el.reference);
+      }
+    });
+
+    res.status(200).json(finalResult);
+  } catch (error) {
+    res.status(404).json({ error: error });
+  }
+};
+
 module.exports = {
   createLabel,
   getLabel,
   getLabels,
   updateLabel,
   deleteLabel,
+  getLabelsRefernces,
 };

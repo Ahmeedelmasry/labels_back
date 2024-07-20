@@ -28,6 +28,10 @@ const LabelsSchema = new mongoose.Schema({
     required: [true, "Please enter barcode"],
     unique: true,
   },
+  reference: {
+    type: String,
+    required: [true, "Please enter reference"],
+  },
   user: {
     type: Object,
     required: [true, "Please enter login user"],
